@@ -8,8 +8,35 @@ dotenv.config();
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and seed projects
+connectDB().then(async () => {
+  try {
+    const Project = require('./models/Project');
+    const User = require('./models/User');
+    const count = await Project.countDocuments();
+    if (count === 0) {
+      let admin = await User.findOne({ email: 'admin@test.com' });
+      if (!admin) {
+        admin = await User.create({
+          name: 'Admin',
+          email: 'admin@test.com',
+          password: 'password123',
+          role: 'admin'
+        });
+      }
+      
+      await Project.insertMany([
+        { name: 'talos', description: 'Talos development', status: 'active', owner: admin._id },
+        { name: 'vindex', description: 'Vindex development', status: 'active', owner: admin._id },
+        { name: 'skyscrapper', description: 'Skyscrapper development', status: 'active', owner: admin._id },
+        { name: 'meta ai', description: 'Meta AI integration', status: 'active', owner: admin._id }
+      ]);
+      console.log('✅ Added default projects: talos, vindex, skyscrapper, meta ai');
+    }
+  } catch (err) {
+    console.error('Error seeding projects:', err.message);
+  }
+});
 
 // Middleware
 app.use(cors());
